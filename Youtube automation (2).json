@@ -1,0 +1,718 @@
+{
+  "name": "Youtube automation",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        96,
+        128
+      ],
+      "id": "ce814f13-1418-4950-902f-88d972210107",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1jwgIONMqonIqmOKxarXLu_gWEWNJQUlKDli0yEhe-Dg",
+          "mode": "list",
+          "cachedResultName": "yt",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1jwgIONMqonIqmOKxarXLu_gWEWNJQUlKDli0yEhe-Dg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1jwgIONMqonIqmOKxarXLu_gWEWNJQUlKDli0yEhe-Dg/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Status"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        304,
+        128
+      ],
+      "id": "c07cebd3-0c67-4031-b545-e3e1f2b81e93",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "KR8NN5t0MCvc1NcB",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "function extractFileId(link) {\n  if (!link || typeof link !== 'string') return null;\n  const match = link.match(/[-\\w]{25,}/); // Extracts Google Drive file ID\n  return match ? match[0] : null;\n}\n\nconst videoLink = $json[\"Video\"];\nconst thumbLink = $json[\"Thumbnail\"];\n\n// Extract video ID\nconst videoFileId = extractFileId(videoLink);\nif (!videoFileId) {\n  throw new Error(\"Invalid Google Drive VIDEO link format.\");\n}\n\n// Extract thumbnail ID (if available)\nlet thumbFileId = null;\nif (thumbLink && thumbLink.trim() !== \"\") {\n  thumbFileId = extractFileId(thumbLink);\n}\n\n// Always return video URL\nconst output = {\n  download_url: `https://drive.google.com/uc?export=download&id=${videoFileId}`\n};\n\n// Add thumbnail URL only if valid\nif (thumbFileId) {\n  output.thumbnail_url = `https://drive.google.com/uc?export=download&id=${thumbFileId}`;\n} else {\n  output.thumbnail_url = null; // or just skip it\n}\n\nreturn [{ json: output }];\n\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        704,
+        128
+      ],
+      "id": "49a81e1e-a92c-46e6-b305-16f3e1b8e28f",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "url": "=\t{{$json[\"download_url\"]}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        128
+      ],
+      "id": "117f27e1-c91e-4414-8077-a7c6178740c4",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "upload",
+        "title": "={{ $('Get row(s) in sheet').item.json.Title }}",
+        "regionCode": "IN",
+        "categoryId": "17",
+        "options": {
+          "description": "={{ $('Get row(s) in sheet').item.json.description }}",
+          "notifySubscribers": true
+        }
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        128
+      ],
+      "id": "08a7c5f5-6f33-4a49-bacf-1e9100e1bf57",
+      "name": "Upload a video",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "WZFaJB45Jkird246",
+          "name": "YouTube account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1jwgIONMqonIqmOKxarXLu_gWEWNJQUlKDli0yEhe-Dg",
+          "mode": "list",
+          "cachedResultName": "yt",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1jwgIONMqonIqmOKxarXLu_gWEWNJQUlKDli0yEhe-Dg/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1jwgIONMqonIqmOKxarXLu_gWEWNJQUlKDli0yEhe-Dg/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $('Get row(s) in sheet').item.json.row_number }}",
+            "Status": "Uploaded"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "Video",
+              "displayName": "Video",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Title",
+              "displayName": "Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "description",
+              "displayName": "description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        4016,
+        128
+      ],
+      "id": "ef9dcf45-f9ed-4f21-ab50-47b67e957b16",
+      "name": "Update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "KR8NN5t0MCvc1NcB",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        512,
+        128
+      ],
+      "id": "3928fa82-65be-400f-96c3-254f91453cac",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Code').item.json.thumbnail_url }}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1504,
+        128
+      ],
+      "id": "46ba9c28-59f2-4e67-847b-c6f7d1da332c",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId={{ $('Upload a video').item.json.uploadId }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "media",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1744,
+        128
+      ],
+      "id": "598fb137-1a78-4907-b68f-cfd6bc420578",
+      "name": "HTTP Request2",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "WZFaJB45Jkird246",
+          "name": "YouTube account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 10
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1312,
+        128
+      ],
+      "id": "d64c01d8-ae10-4ca4-b6ea-bc28edc43b81",
+      "name": "Wait",
+      "webhookId": "98060f8d-9d6b-40d5-8e24-ac9469cffbc0"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "15ecf300-4017-402d-b677-38a96d48d116",
+              "name": "Video Link",
+              "value": "={{ \"https://www.youtube.com/watch?v=\" + $('Upload a video').item.json.uploadId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1952,
+        128
+      ],
+      "id": "562608a5-1e4b-4705-9171-83447b328d79",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "url": "https://youtube-video-summarizer-gpt-ai.p.rapidapi.com/api/v1/get-transcript-v2",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "video_id",
+              "value": "={{ $json.video_id }}"
+            },
+            {
+              "name": "platform",
+              "value": "youtube"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-rapidapi-host",
+              "value": "youtube-video-summarizer-gpt-ai.p.rapidapi.com"
+            },
+            {
+              "name": "x-rapidapi-key",
+              "value": "feeac2d7bbmsha0bedc9fe3ccb66p1ecc57jsn262f9e5abeb9"
+            },
+            {
+              "name": "x-rapidapi-key",
+              "value": "feeac2d7bbmsha0bedc9fe3ccb66p1ecc57jsn262f9e5abeb9"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2784,
+        128
+      ],
+      "id": "d3e3c73f-76d0-49c5-b1ae-d0948cc7febc",
+      "name": "HTTP Request3",
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "retryOnFail": false
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2160,
+        128
+      ],
+      "id": "9f19eca0-16ec-4df0-a9c7-f670f0f330ff",
+      "name": "Wait1",
+      "webhookId": "e485aeee-37e9-42f7-8162-a0fe7213254d"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "63491af0-e2b1-48c1-8a08-763dac6721d5",
+              "name": "data.transcripts",
+              "value": "={{ $json.data.transcripts }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2992,
+        128
+      ],
+      "id": "a640d52a-cfa8-4743-b12b-e6702f4128fe",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Access the actual transcripts object\nconst transcripts = $json.data.transcripts.hi_auto;\n\n// Collect all chunks\nlet allChunks = [];\n\n// Add custom if present\nif (transcripts.custom && Array.isArray(transcripts.custom)) {\n  allChunks = allChunks.concat(transcripts.custom);\n}\n\n// Add default if present\nif (transcripts.default && Array.isArray(transcripts.default)) {\n  allChunks = allChunks.concat(transcripts.default);\n}\n\n// Sort by start time (if available)\nallChunks.sort((a, b) => (a.start || \"\").localeCompare(b.start || \"\"));\n\n// Merge all text fields\nconst combinedText = allChunks.map(chunk => chunk.text.trim()).join(\" \");\n\n// Return single combined transcript\nreturn [\n  {\n    json: {\n      combinedTranscript: combinedText\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3200,
+        128
+      ],
+      "id": "25244fa2-28d2-4e0c-8248-0a9fec4b3d0b",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.combinedTranscript }}",
+        "options": {
+          "systemMessage": "YOU ARE AGENT : THE WORLD’S LEADING EXPERT IN YOUTUBE VIDEO DESCRIPTIONS & SEO META TAGS\nInternationally recognized for crafting high-converting, algorithm-optimized YouTube video descriptions, your job is to turn summarized transcripts or video content into descriptions that boost discoverability, increase CTR, and keep viewers engaged. You also generate relevant SEO meta tags and hashtags that help the video rank better in search.\n\n✅ INSTRUCTIONS\nUse a compelling hook in the first 1–2 lines — this is what appears above the fold and needs to grab attention immediately.\n\nSummarize the video content clearly and naturally in 3–6 sentences — keep it audience-friendly and informative.\n\nInclude CTA lines like “Subscribe,” “Watch next,” “Join the community,” etc.\n\nInclude 2 blocks at the end:\n\nSEO Meta Tags (comma-separated keywords)\n\nHashtags (in YouTube-friendly format)\n\n🧠 CHAIN OF THOUGHTS\nANALYZE THE VIDEO SUMMARY OR TRANSCRIPT\n\nUnderstand the topic, tone, and value for the viewer.\n\nIdentify keywords and content highlights.\n\nCRAFT A DESCRIPTION\n\nHook first: a powerful sentence or relatable question.\n\nOverview: what the viewer will learn or gain.\n\nContent breakdown: any notable moments or segments.\n\nEngagement prompts: ask for likes, subs, or comments.\n\nSEO OPTIMIZATION\n\nUse relevant, high-ranking keywords naturally.\n\nCreate a separate list of tags to improve search indexing.\n\nInclude niche-specific hashtags and trends.\n\nFORMAT FOR YOUTUBE\n\nMake sure the first 2 lines are click-worthy.\n\nUse line breaks to improve readability.\n\nPlace SEO tags at the end, not in the main paragraph.\n\n❌ WHAT NOT TO DO\nDon’t start with boring or vague intros like “In this video…”\n\nDon’t skip SEO tags, hashtags, or CTAs.\n\nDon’t stuff keywords unnaturally — keep it human-readable.\n\nDon’t write bulky, unstructured paragraphs.\n\nDon’t reuse the same description format every time — customize!\n\n💡 FEW-SHOT EXAMPLE\n🎥 Input Summary:\n\"A 10-minute video explaining how to use ChatGPT with Airtable and automate workflows using N8N. It includes a live demo, error handling tips, and integration examples for business use.\"\n\n📄 Output Description:\nWant to automate your business using ChatGPT? This video shows you EXACTLY how to do it — step-by-step! 💡\n\nIn this quick tutorial, you'll learn how to:\n\nConnect ChatGPT to Airtable\n\nAutomate workflows using N8N\n\nHandle errors like a pro\n\nUse real business case examples to scale your productivity\n\n📌 Whether you're a no-code beginner or a workflow wizard, this guide breaks it down in a simple, clear way. Watch till the end for advanced bonus tips!\n\n👍 Like, Share, and Subscribe for weekly AI and automation hacks.\n🔔 Turn on the bell to stay ahead of the game.\n\n🔍 SEO Tags:\nchatgpt automation, n8n tutorial, airtable workflow, ai business tools, openai automation, no code automations, chatgpt n8n integration\n\n#️⃣ Hashtags:\n#ChatGPT #Airtable #N8N #AutomationTutorial #NoCodeAI #WorkflowHacks\n\nWhatever the language of the transcription is I want you to give me the description in English only"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        3408,
+        128
+      ],
+      "id": "f3abcbaa-e3cf-42ed-835a-7c00a04b4392",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        3280,
+        336
+      ],
+      "id": "db30a0e4-8bae-49c6-83bc-50f87641fd48",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "GuFyHFUbGWfRejzR",
+          "name": "OpenAi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  const videoLink = item.json[\"Video Link\"];\n  const match = videoLink.match(/(?:v=|\\/)([0-9A-Za-z_-]{11})/);\n\n  const videoId = match ? match[1] : null;\n\n  return {\n    json: {\n      \"Video Link\": videoLink,\n      \"video_id\": videoId\n    }\n  };\n});\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2368,
+        128
+      ],
+      "id": "e7c9794d-6c8b-48e0-9567-1f18b35087f6",
+      "name": "Code2"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2576,
+        128
+      ],
+      "id": "caa41b27-36ee-4b2c-ad6a-a16d5dab0c60",
+      "name": "Wait2",
+      "webhookId": "2a54ac90-674e-41b0-bc83-9c81f1a6a130"
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "update",
+        "videoId": "={{ $('Code2').item.json.video_id }}",
+        "title": "={{ $('Get row(s) in sheet').item.json.Title }}",
+        "regionCode": "IN",
+        "categoryId": "17",
+        "updateFields": {
+          "description": "={{ $json.output }}"
+        }
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        3824,
+        128
+      ],
+      "id": "6616131f-aae4-4025-968a-bb7e62b4d844",
+      "name": "Update a video",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "WZFaJB45Jkird246",
+          "name": "YouTube account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "When clicking ‘Execute workflow’": [
+      {
+        "json": {}
+      }
+    ]
+  },
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Upload a video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload a video": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request2": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Code2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request3": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code2": {
+      "main": [
+        [
+          {
+            "node": "Wait2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait2": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Update a video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update a video": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "f00c094d-67f0-41d9-8b03-8d06bfea0425",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8f03f2624c40ecfa12109b61ac456a6e7ec787117043f8c4ef050e9b3e0397e4"
+  },
+  "id": "LXmLzOzVToVHulPU",
+  "tags": []
+}
